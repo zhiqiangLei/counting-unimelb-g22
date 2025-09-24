@@ -40,7 +40,7 @@ The program allows you to draw a counting line interactively in the video feed. 
 - Saved Configurations: You will be prompted to load a previously saved line configuration, or you can choose to draw a new line if you're using the system for the first time.
 ## Running the Application
 ```bash
-python xxx.py
+python enhanced_fish_counter_w9.py
 ```
 ## Example of Output:
 -Once the application starts, you will see the following status:
