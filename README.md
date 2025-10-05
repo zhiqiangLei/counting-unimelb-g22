@@ -14,7 +14,7 @@ This project is a **real-time fish counting application** that utilizes the **YO
 
 - Python 3.6+
 - **OpenCV**: For handling video input/output and drawing operations.
-- **Ultralytics YOLO**: For fish detection (use the YOLOv5 or YOLOv8 model).
+- **Ultralytics YOLO**: For fish detection (use YOLO11n model).
 - **psutil**: For system resource monitoring (memory usage, CPU).
 - **numpy**: For handling arrays and numerical operations.
 
