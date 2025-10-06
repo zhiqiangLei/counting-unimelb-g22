@@ -39,11 +39,34 @@ The program allows you to draw a counting line interactively in the video feed. 
 
 - Saved Configurations: You will be prompted to load a previously saved line configuration, or you can choose to draw a new line if you're using the system for the first time.
 ## Running the Application
+The main entry point of the program is defined at the bottom of the script:
+```bash
+if __name__ == "__main__":
+    try:
+        run_simple_fish_counter(
+            model_path="best.pt", 
+            camera_index=1,
+            save_output=True,
+            max_runtime_hours=None  # unlimited runtime
+        )
+
+```bash
 ```bash
 python enhanced_fish_counter_w9.py
 ```
+- camera_index: Please change this value according to the camera device you are using.
+
+  0 usually refers to the default laptop/webcam camera.
+
+  1, 2, ... refer to external USB or other connected cameras.
+
+- model_path: Path to the trained YOLO model (default "best.pt").
+
+- save_output: If set to True, saves the counting results to a video file.
+
+- max_runtime_hours: Allows you to limit the runtime in hours (set to None for unlimited runtime).
 ## Example of Output:
--Once the application starts, you will see the following status:
+- Once the application starts, you will see the following status:
 ```bash
 ENHANCED FISH COUNTER WITH MEMORY MANAGEMENT
 --------------------------------------------------
