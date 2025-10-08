@@ -8,6 +8,31 @@ import gc
 from datetime import datetime, timedelta
 import psutil  
 
+# code patch kurnia
+import requests
+
+# Jetson Nano dashboard base URL; can be overridden via env var
+FISHDASH_SERVER = os.environ.get("FISHDASH_SERVER", "http://100.76.99.48:8000")
+
+def _send_event(direction: str, conf: float, track_id=None, cls: str="fish"):
+    """Send an event to the FishDash server (/event) — best-effort, non-blocking."""
+    try:
+        r = requests.post(
+            f"{FISHDASH_SERVER}/event",
+            json={
+                "direction": direction,
+                "conf": float(conf) if conf is not None else None,
+                "track_id": int(track_id) if track_id is not None else None,
+                "cls": cls,
+            },
+            timeout=1.5
+        )
+        r.raise_for_status()
+        print(f"[INFO] Event sent to {FISHDASH_SERVER}: {direction} id={track_id} conf={conf:.2f}")
+    except Exception as e:
+        print(f"[WARN] Failed to send event to {FISHDASH_SERVER}: {e}")
+# code patch kurnia end
+
 class SimpleFishCounter:
     def __init__(self, model_path="best.pt"):
         self.model = YOLO(model_path)
@@ -339,9 +364,15 @@ class SimpleFishCounter:
                             if direction == "in":
                                 self.in_count += 1
                                 print(f" Fish {track_id} crossed IN. Total IN: {self.in_count}")
+                                # code patch kurnia
+                                _send_event('in', conf, track_id, 'fish')
+                                # code patch kurnia end
                             elif direction == "out":
                                 self.out_count += 1
                                 print(f" Fish {track_id} crossed OUT. Total OUT: {self.out_count}")
+                                # code patch kurnia
+                                _send_event('out', conf, track_id, 'fish')
+                                # code patch kurnia end
                             
                             if direction:  # Only add to counted if direction was determined
                                 self.counted_ids.add(track_id)
@@ -400,10 +431,10 @@ class SimpleFishCounter:
         return frame
 
 
-def run_simple_fish_counter(model_path="best.pt", camera_index=0, save_output=False, max_runtime_hours=None):
+def run_simple_fish_counter(model_path="best.pt", camera_index=1, save_output=False, max_runtime_hours=None):
     """
     Enhanced fish counter with memory management and detailed monitoring
-    
+
     Args:
         model_path: Path to YOLO model
         camera_index: Camera index (0 for default)
@@ -413,30 +444,30 @@ def run_simple_fish_counter(model_path="best.pt", camera_index=0, save_output=Fa
     print("-"*50)
     print("ENHANCED FISH COUNTER WITH MEMORY MANAGEMENT")
     print("-"*50)
-    
+
     # Initialize camera
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
         raise IOError(f"Cannot open camera with index {camera_index}")
-    
+
     w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
     print(f"Camera initialized: {w}x{h} @ {fps}fps")
-    
+
     # Capture setup frame
     success, setup_frame = cap.read()
     if not success:
         raise IOError("Failed to capture setup frame")
-    
+
     # Initialize counter
     counter = SimpleFishCounter(model_path)
     print(f"Initial memory usage: {counter.get_memory_usage():.1f}MB")
-    
+
     # Setup counting line
     region_points = counter.setup_counting_line_from_frame(setup_frame)
     if not region_points:
         print("No counting line configured. Exiting.")
         return
-    
+
     # Setup video writer
     video_writer = None
     if save_output:
@@ -446,47 +477,47 @@ def run_simple_fish_counter(model_path="best.pt", camera_index=0, save_output=Fa
         output_filename = f"fish_output_{timestamp}.mp4"
         video_writer = cv2.VideoWriter(output_filename, fourcc, output_fps, (w, h))
         print(f"Recording enabled: {output_filename} @ {output_fps}fps")
-    
+
     print(f"\nStarting live counting...")
     if max_runtime_hours:
         print(f"Maximum runtime: {max_runtime_hours} hours")
     print("Press 'q' to quit, 's' for immediate status report")
     print("-"*50)
-    
+
     start_time = time.time()
-    
+
     try:
         while cap.isOpened():
             current_time = time.time()
-            
+
             # Check maximum runtime
             if max_runtime_hours and (current_time - start_time) > (max_runtime_hours * 3600):
                 print(f"\nReached maximum runtime of {max_runtime_hours} hours")
                 break
-            
+
             success, frame = cap.read()
             if not success:
                 print("Frame capture failed")
                 break
-            
+
             # Process frame
             annotated_frame = counter.process_frame(frame)
             final_frame = counter.draw_counter_overlay(annotated_frame)
-            
+
             # Save video
             if video_writer:
                 video_writer.write(final_frame)
-            
+
             # Display
             cv2.imshow("Fish Counter", final_frame)
-            
+
             # Handle key presses
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
             elif key == ord('s'):  # Manual status report
                 counter.print_detailed_status()
-                
+
     except KeyboardInterrupt:
         print("\nInterrupted by user")
     except Exception as e:
@@ -499,12 +530,12 @@ def run_simple_fish_counter(model_path="best.pt", camera_index=0, save_output=Fa
         if video_writer:
             video_writer.release()
         cv2.destroyAllWindows()
-        
+
         # Final status report
         elapsed = time.time() - start_time
         avg_fps = counter.frame_count / elapsed if elapsed > 0 else 0
         final_memory = counter.get_memory_usage()
-        
+
         print("\n" + "-"*50)
         print("FINAL RESULTS")
         print("-"*50)
