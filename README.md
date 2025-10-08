@@ -39,6 +39,16 @@ The program allows you to draw a counting line interactively in the video feed. 
 
 - Saved Configurations: You will be prompted to load a previously saved line configuration, or you can choose to draw a new line if you're using the system for the first time.
 ## Running the Application
+## 🚀 Run Instructions
+
+First, configure the environment variable to set the Dashboard server address. This tells the program where to send the fish counting results.
+
+```bash
+export FISHDASH_SERVER="http://100.76.99.48:8000"
+python3 enhanced_fish_counter_w9_v1.py
+```
+**After starting, open the Dashboard link in your browser (http://100.76.99.48:8000) to see the real-time statistics and updates as the fish are detected.**
+
 The main entry point of the program is defined at the bottom of the script:
 ```bash
 if __name__ == "__main__":
@@ -50,7 +60,7 @@ if __name__ == "__main__":
             max_runtime_hours=None  # unlimited runtime
         )
 
-```bash
+```
 ```bash
 python enhanced_fish_counter_w9.py
 ```
